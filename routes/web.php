@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ViewController;
 
 /*
@@ -23,6 +24,7 @@ Route::get('/csv', [ViewController::class, 'csv']);
 Route::get('/image', [ViewController::class, 'image']);
 Route::post('/uploadImage', [ProductController::class, 'uploadImage'])->name('upload.image');
 Route::post('/uploadCsv', [PdfController::class, 'uploadCsv'])->name('upload.csv');
+Route::post('/downloadImages', [ImageController::class, 'downloadImages'])->name('download.images');
 Route::get('/passwordChange', [ViewController::class,'passwordChange']);
 Route::get('/logout', [LoginController::class,'logout'])->name('logout');
 Route::post('/change-password', [LoginController::class,'changePassword'])->name('change.password');

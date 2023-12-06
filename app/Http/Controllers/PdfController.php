@@ -1,67 +1,84 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
 use App\Models\Product;
 use TCPDF;
 
 class PdfController extends Controller
 {
-    public function uploadCsv(Request $request)
-    {
-        if ($request->hasFile('csv_file')) {
-            $file = $request->file('csv_file');
-            $data = array_map('str_getcsv', file($file));
+    public function uploadCsv(Request $request) {
+        // Retrieve the uploaded CSV file
+        $file = $request->file('csv_file');
+        $csvData = array_map('str_getcsv', file($file));
+        $columns = array_shift($csvData); // Extract columns
 
-            $pdf = new TCPDF();
-            $pdf->SetMargins(15, 15, 15);
-            $pdf->AddPage();
+        // Determine which checkboxes are selected
+        $selectedColumns = [];
+        if ($request->has('sku')) {
+            $selectedColumns['sku'] = true;
+        }
+        if ($request->has('qty')) {
+            $selectedColumns['qty'] = true;
+        }
+        if ($request->has('orderId')) {
+            $selectedColumns['orderId'] = true;
+        }
+        if ($request->has('orderNotes')) {
+            $selectedColumns['orderNotes'] = true;
+        }
+        if ($request->has('invoiceNumber')) {
+            $selectedColumns['invoiceNumber'] = true;
+        }
 
-            foreach ($data as $row) {
-                if (isset($row['SKU'])) {
-                    $skuCode = $row['SKU'];
+        $selectedData = [];
+        $images = [];
 
-                    $product = Product::where('sku_code', $skuCode)->first();
+        // Match CSV Data to selected columns
+        foreach ($csvData as $data) {
+            $selectedRow = [];
 
-                    if ($product) {
-                        $imagePath = $this->getBase64Image($product->image);
+            // Extract SKU based on the 'SKU' column
+            $skuColumn = array_search('SKU', $columns);
+            $sku = $data[$skuColumn];
+            
+            // Match images from the database based on the SKU or any unique identifier from CSV
+            $product = Product::where('sku_code', $sku)->first();
 
-                        // Add base64 encoded image to the PDF
-                        if ($imagePath) {
-                            $pdf->Image('@' . $imagePath, 15, $pdf->GetY(), 60, 60, 'JPG', '', '', true, 150, '', false, false, 1, false, false, false);
-                            $pdf->Ln(70); // Move down after adding the image
-                        }
+            // Get the image URL from the database
+            if ($product && $product->image) {
+                $images[] = $product->image;
+            }
 
-                        // Add checkbox values to PDF
-                        $checkboxValues = [];
-                        if (isset($row['Qty']) && $row['Qty'] != '') {
-                            $checkboxValues[] = 'Qty: ' . $row['Qty'];
-                        }
-                        // Add other checkbox values in a similar manner
-
-                        foreach ($checkboxValues as $checkbox) {
-                            $pdf->MultiCell(0, 10, $checkbox, 0, 'L');
-                        }
-                    }
+            foreach ($selectedColumns as $columnName => $isSelected) {
+                if ($isSelected) {
+                    $selectedRow[$columnName] = $data[array_search($columnName, $columns)];
                 }
             }
 
-            // Output the PDF
-            $pdf->Output('generated_pdf.pdf', 'I');
-
-            // Redirect back with success message
-            return redirect()->back()->with('success', 'PDF generated successfully!');
+            $selectedData[] = $selectedRow;
         }
-    }
 
-    // Function to convert online image to base64
-    private function getBase64Image($imageUrl)
-    {
-        $imageContent = file_get_contents($imageUrl);
-        $base64 = 'data:image/jpeg;base64,' . base64_encode($imageContent);
+        // Generate PDF using TCPDF
+        $pdf = new TCPDF();
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
 
-        return $base64;
+        // Add content to PDF
+        foreach ($selectedData as $key => $row) {
+            $pdf->AddPage();
+            if (isset($images[$key])) {
+                $pdf->Image($images[$key], 15, 15, 180, 180); // Display image
+            }
+
+            $yPosition = 210;
+            foreach ($row as $columnName => $value) {
+                $pdf->Text(20, $yPosition, "$columnName: $value");
+                $yPosition += 10; // Increment y position for the next line
+            }
+        }
+
+        // Output the PDF
+        $pdf->Output('data_with_images.pdf', 'I'); // 'D' for download
     }
 }
-

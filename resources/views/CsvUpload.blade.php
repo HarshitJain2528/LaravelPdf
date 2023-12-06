@@ -12,7 +12,7 @@
 				<hr style="margin:0px; width:600px; margin-bottom:10px" />
 				<div style=" background:#F3F1F1;border:1px solid silver; font: bold 13px/13px arial ;padding:5px 0px 5px 15px ">Upload Csv File</div>
 				<div>
-					<form action="{{route('upload.csv')}}" method="post" enctype="multipart/form-data">
+					<form action="" id="downloadForm" method="post" enctype="multipart/form-data">
 						@csrf
 						<table class="addpage-table">
 							<tr>
@@ -34,8 +34,8 @@
 							<tr>
 								<td></td>
 								<td colspan="2">
-									<button class="srchbtn" type="submit">Download Pdf</button>    
-									<button class="srchbtn" type="submit">Download Images</button>    
+									<button class="srchbtn" type="button" onclick="setAction('pdf')">Download Pdf</button>
+                                    <button class="srchbtn" type="button" onclick="setAction('images')">Download Images</button>   
 								</td>
 							</tr>
 						</table>
@@ -44,4 +44,18 @@
 		</section>
 		</div>
 	</aside>
+@endsection
+@section('scripts')
+    <script>
+        function setAction(type) {
+            var form = document.getElementById('downloadForm');
+            if (type === 'pdf') {
+                form.action = '{{ route("upload.csv") }}';
+                form.submit();
+            } else if (type === 'images') {
+                form.action = '{{ route("download.images") }}';
+                form.submit();
+            }
+        }
+    </script>
 @endsection

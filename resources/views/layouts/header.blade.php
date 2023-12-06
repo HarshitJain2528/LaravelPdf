@@ -8,6 +8,7 @@
 	<link rel="stylesheet" href="{{asset('assets/css/style.css')}}">
 	<link rel="stylesheet" href="{{asset('assets/css/color.css')}}">
     <script src="{{asset('assets/JS/tinymce/tinymce.min.js')}}"></script>
+    {{-- <script src="{{asset('assets/JS/script.js')}}"></script> --}}
     <script>tinymce.init({ selector:'.tinymce' });</script>
 </head>
 <body>
