@@ -1,84 +1,59 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use App\Models\Product;
 use TCPDF;
 
 class PdfController extends Controller
 {
-    public function uploadCsv(Request $request) {
-        // Retrieve the uploaded CSV file
+     /**
+     * Upload a CSV file and generate a PDF with data and images.
+     *
+     * @param  Request  $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function uploadCsv(Request $request)
+    {
         $file = $request->file('csv_file');
         $csvData = array_map('str_getcsv', file($file));
-        $columns = array_shift($csvData); // Extract columns
+        $columns = array_shift($csvData);
 
-        // Determine which checkboxes are selected
-        $selectedColumns = [];
-        if ($request->has('sku')) {
-            $selectedColumns['sku'] = true;
-        }
-        if ($request->has('qty')) {
-            $selectedColumns['qty'] = true;
-        }
-        if ($request->has('orderId')) {
-            $selectedColumns['orderId'] = true;
-        }
-        if ($request->has('orderNotes')) {
-            $selectedColumns['orderNotes'] = true;
-        }
-        if ($request->has('invoiceNumber')) {
-            $selectedColumns['invoiceNumber'] = true;
-        }
-
-        $selectedData = [];
+        $skus = [];
         $images = [];
 
-        // Match CSV Data to selected columns
         foreach ($csvData as $data) {
-            $selectedRow = [];
-
-            // Extract SKU based on the 'SKU' column
             $skuColumn = array_search('SKU', $columns);
             $sku = $data[$skuColumn];
-            
-            // Match images from the database based on the SKU or any unique identifier from CSV
+            $skus[] = $sku;
+
             $product = Product::where('sku_code', $sku)->first();
 
-            // Get the image URL from the database
             if ($product && $product->image) {
-                $images[] = $product->image;
+                $images[] = $product->image; 
+            } else {
+                $images[] = null;
             }
-
-            foreach ($selectedColumns as $columnName => $isSelected) {
-                if ($isSelected) {
-                    $selectedRow[$columnName] = $data[array_search($columnName, $columns)];
-                }
-            }
-
-            $selectedData[] = $selectedRow;
         }
 
-        // Generate PDF using TCPDF
         $pdf = new TCPDF();
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
 
-        // Add content to PDF
-        foreach ($selectedData as $key => $row) {
+        foreach ($images as $index => $image) {
             $pdf->AddPage();
-            if (isset($images[$key])) {
-                $pdf->Image($images[$key], 15, 15, 180, 180); // Display image
-            }
+            $pdf->SetFont('helvetica', '', 12);
+            
+            $pdf->Cell(10, 10, 'SKU: ' . $skus[$index], 0, 1);
 
-            $yPosition = 210;
-            foreach ($row as $columnName => $value) {
-                $pdf->Text(20, $yPosition, "$columnName: $value");
-                $yPosition += 10; // Increment y position for the next line
+            if ($image !== null) {
+                $pdf->Image($image, 15, $pdf->GetY() + 30, 180, 180);
+            } else {
+                $pdf->Cell(0, 10, 'No image available', 0, 1);
             }
         }
 
-        // Output the PDF
-        $pdf->Output('data_with_images.pdf', 'I'); // 'D' for download
+        $pdf->Output('data_with_images.pdf', 'I'); 
     }
 }

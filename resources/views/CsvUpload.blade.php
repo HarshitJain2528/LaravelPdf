@@ -2,8 +2,8 @@
 
 @section('csvUpload-section')
 	<aside>
-		@include('layouts.leftlist');
-		<div class="col-md-10 main-section" style="margin-top:-30px;">
+		@include('layouts.leftlist')
+		<div class="col-md-10 main-section" >
 			@if (session('success'))
 				<div class="alert alert-success">{{session('success')}}</div>
 			@endif
@@ -21,16 +21,7 @@
 									<input type="file" name="csv_file" id="csvFile" accept=".csv"> 
 								</td>
 							</tr>
-							<tr>
-								<td>Options</td>
-								<td>
-									Sku  <input type="checkbox" name="sku" id="sku" accept=".csv" checked> <br>
-									Qty  <input type="checkbox" name="qty" id="qty" accept=".csv"> <br>
-									Order Id  <input type="checkbox" name="orderId" id="orderId" accept=".csv"> <br>
-									Order Notes <input type="checkbox" name="orderNotes" id="orderNotes" accept=".csv"> <br>
-									Invoice Number  <input type="checkbox" name="invoiceNumber" id="invoiceNumber" accept=".csv"> 
-								</td>
-							</tr>
+							
 							<tr>
 								<td></td>
 								<td colspan="2">

@@ -18,13 +18,26 @@ use App\Http\Controllers\ViewController;
 |
 */
 
-Route::get('/', [ViewController::class,'index'])->name('index');
-Route::post('/login', [LoginController::class,'login'])->name('login');
-Route::get('/csv', [ViewController::class, 'csv']);
-Route::get('/image', [ViewController::class, 'image']);
+// View related routes
+Route::controller(ViewController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::get('/csv', 'csv');
+    Route::get('/image', 'image');
+    Route::get('/passwordChange','passwordChange');
+});
+
+// Login related routes
+Route::controller(LoginController::class)->group(function () {
+    Route::post('/login','login')->name('login');
+    Route::get('/logout', 'logout')->name('logout');
+    Route::post('/change-password', 'changePassword')->name('change.password');
+});
+
+//ProductController route
 Route::post('/uploadImage', [ProductController::class, 'uploadImage'])->name('upload.image');
+
+//PdfController route
 Route::post('/uploadCsv', [PdfController::class, 'uploadCsv'])->name('upload.csv');
+
+//ImageController route
 Route::post('/downloadImages', [ImageController::class, 'downloadImages'])->name('download.images');
-Route::get('/passwordChange', [ViewController::class,'passwordChange']);
-Route::get('/logout', [LoginController::class,'logout'])->name('logout');
-Route::post('/change-password', [LoginController::class,'changePassword'])->name('change.password');

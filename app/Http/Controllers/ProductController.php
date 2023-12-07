@@ -7,6 +7,12 @@ use App\Models\Product;
 
 class ProductController extends Controller
 {
+     /**
+     * Upload CSV file containing product data with SKU codes and image URLs.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function uploadImage(Request $request)
     {
         if ($request->hasFile('images') && $request->file('images')->isValid()) {

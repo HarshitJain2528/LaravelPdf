@@ -3,46 +3,68 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use ZipArchive;
 use App\Models\Product;
+use ZipArchive;
 
 class ImageController extends Controller
 {
-
+    /**
+     * Download images based on provided SKU codes in a CSV file.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function downloadImages(Request $request)
     {
-        // Assuming you have uploaded the CSV file
-        $uploadedFile = $request->file('csv_file');
-    
-        // Process the CSV file to get SKUs
-        $skus = []; // Extracted SKUs from the CSV
-    
-        // Query database for images related to SKUs
-        $images = Product::whereIn('sku_code', $skus)->get(); // Assuming Product is your model for the 'products' table
-    
-        // Create a ZIP file in memory
-        $zipFileName = 'images_' . time() . '.zip';
-        $zip = new ZipArchive;
-        $zip->open($zipFileName, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-    
-        // Download images and add to the in-memory ZIP file
-        foreach ($images as $image) {
-            $imageUrl = $image->image; // Replace with your image column name
-            $contents = file_get_contents(public_path($imageUrl)); // Assuming images are stored in public folder
-            $imageName = basename($imageUrl);
-            $zip->addFromString($imageName, $contents);
-        }
-    
-        $zip->close();
-    
-        // Clear output buffer to avoid conflicts with Laravel's response
-        ob_clean();
-    
-        // Set headers to force download the ZIP file
-        return response()->download($zipFileName, $zipFileName, ['Content-Type' => 'application/zip'])
-            ->deleteFileAfterSend(true);
-    }
-    
+        $request->validate([
+            'csv_file' => 'required|mimes:csv,txt'
+        ]);
 
+        $csvFile = $request->file('csv_file');
+
+        $skuCodes = [];
+        $firstRowSkipped = false;
+
+        if (($handle = fopen($csvFile->getPathname(), 'r')) !== false) {
+            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                if (!$firstRowSkipped) {
+                    $firstRowSkipped = true;
+                    continue;
+                }
+                $skuCodes[] = $data[0];
+            }
+            fclose($handle);
+        }
+
+        $imageUrls = Product::whereIn('sku_code', $skuCodes)
+            ->pluck('image');
+
+        $tempDirectory = sys_get_temp_dir() . '/downloaded_images';
+        if (!is_dir($tempDirectory)) {
+            mkdir($tempDirectory);
+        }
+
+        foreach ($imageUrls as $imageUrl) {
+            $imageContent = file_get_contents($imageUrl);
+            $imageName = basename($imageUrl);
+            $imagePath = $tempDirectory . '/' . $imageName;
+            file_put_contents($imagePath, $imageContent);
+        }
+
+        $zip = new ZipArchive;
+        $zipFileName = 'images.zip';
+        if ($zip->open($zipFileName, ZipArchive::CREATE) === TRUE) {
+            foreach (glob($tempDirectory . '/*') as $downloadedFile) {
+                $zip->addFile($downloadedFile, basename($downloadedFile));
+            }
+            $zip->close();
+
+            array_map('unlink', glob($tempDirectory . '/*'));
+            rmdir($tempDirectory);
+
+            return response()->download($zipFileName)->deleteFileAfterSend(true);
+        }
+
+        return back()->with('error', 'Unable to create zip file');
+    }
 }

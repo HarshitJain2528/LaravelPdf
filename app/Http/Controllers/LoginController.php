@@ -9,6 +9,12 @@ use App\Models\Login;
 
 class LoginController extends Controller
 {
+    /**
+     * Authenticate user login.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function login(Request $request)
     {
         $username = $request->input('username');
@@ -25,6 +31,12 @@ class LoginController extends Controller
         }
     }
 
+    /**
+     * Change user password.
+     *
+     * @param  Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function changePassword(Request $request)
     {
         if ($request->isMethod('post')) {
@@ -47,6 +59,11 @@ class LoginController extends Controller
         }
     }
 
+    /**
+     * Logout the authenticated user.
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function logout() {
         Session::flush();
         Auth::logout();
